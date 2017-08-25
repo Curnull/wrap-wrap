@@ -1,0 +1,29 @@
+{
+  "extends": ["tslint:recommended", "tslint-react"],
+  "rules": {
+    "object-literal-sort-keys": false,
+    "only-arrow-functions": false,
+    "ordered-imports": false,
+    "no-namespace": false,
+    "no-string-literal": false,
+    "no-shadowed-variable": false,
+    "max-classes-per-file": [true, 3],
+    "max-line-length": [140],
+    "one-line": true,
+    "quotemark": [true, "single"],
+    "no-console": [true, "warn", "debug", "table"],
+    "trailing-comma": false,
+    "no-bitwise": false,
+    "whitespace": [
+      true,
+      "check-branch",
+      "check-decl",
+      "check-operator",
+      "check-separator",
+      "check-type",
+      "check-typecast"
+    ],
+    "no-empty": false,
+    "no-empty-interface": false
+  }
+}

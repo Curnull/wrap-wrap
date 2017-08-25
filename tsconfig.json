@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+      "target": "es5",
+      "lib":["dom", "es6", "DOM.Iterable", "ScriptHost", "ES2016.Array.Include", "es2017"],
+      "module": "es6",
+      "declaration": true,
+      "outDir": "./dist",
+      "strict": true,
+      "jsx": "react",
+      "removeComments": true
+    }
+  }
