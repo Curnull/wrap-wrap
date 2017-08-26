@@ -1,8 +1,3 @@
-# Ignore everything
-*
-
-# But not these files...
-!.npmignore
-!/dist
-!package.json
-!LICENSE
+src
+tsconfig.json
+tslint.json

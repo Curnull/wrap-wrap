@@ -1,6 +1,6 @@
 {
   "name": "wrap-wrap",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Library which helps to avoid bunch of common React/Redux app problems",
   "main": "./dist/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Curnull/wraptor.git"
+    "url": "git+https://github.com/Curnull/wrap-wrap.git"
   },
   "keywords": [
     "React",
