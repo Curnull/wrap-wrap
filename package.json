@@ -1,11 +1,11 @@
 {
   "name": "wrap-wrap",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Library which helps to avoid bunch of common React/Redux app problems",
-  "main": "./dist/index.js",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "tsc -p ./ --outDir dist/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,9 +20,9 @@
   "author": "Daniel Semenov",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Curnull/wraptor/issues"
+    "url": "https://github.com/Curnull/wrap-wrap/issues"
   },
-  "homepage": "https://github.com/Curnull/wraptor#readme",
+  "homepage": "https://github.com/Curnull/wrap-wrap#readme",
   "devDependencies": {
     "@types/prop-types": "^15.5.1",
     "@types/react": "^16.0.5",
