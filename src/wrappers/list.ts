@@ -6,8 +6,8 @@ export interface IListWrapperMethods<T> {
   setItem: (index: number, item: T) => void;
   add: (items: T[] | T) => void;
   remove: (items: T[] | T) => void;
-  isSelected: (T) => boolean;
-  toggleItem: (T) => void;
+  includes: (item: T) => void;
+  toggleItem: (item: T) => void;
   setProp: (index: number, field: string, value: any) => void;
 }
 
@@ -45,9 +45,9 @@ export function list<T>(items?: T[]): ListWrapper<T> {
         }
       };
 
-      const isSelected = (item: T) => getState().items.indexOf(item) !== -1;
+      const includes = (item: T) => getState().items.indexOf(item) !== -1;
 
-      const toggleItem = (item: T) => (isSelected(item) ? remove(item) : add(item));
+      const toggleItem = (item: T) => (includes(item) ? remove(item) : add(item));
 
       const setProp = <K extends keyof T>(index: number, field: K, value: T[K]) => {
         const item = getState().items[index];
@@ -64,7 +64,7 @@ export function list<T>(items?: T[]): ListWrapper<T> {
         set,
         add,
         remove,
-        isSelected,
+        includes,
         toggleItem,
         setProp,
         setItem,

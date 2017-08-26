@@ -11,6 +11,12 @@ interface IReducersStore {
   [reducerName: string]: Reducer<any, any>;
 }
 
+declare var process: {
+  env: {
+    NODE_ENV: string
+  }
+};
+
 let __DEV__ = false;
 try {
   __DEV__ = process.env.NODE_ENV !== 'production';

@@ -85,7 +85,7 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
   }
   public withMethods = <TNextMethods>(methodsGetter: MethodsGetter<TMethods, TNextMethods, TReduxState>) => {
     this.shouldBeUnmounted();
-    const nextMethodsGetter = (context) => methodsGetter(context, this.methodsGetter(context));
+    const nextMethodsGetter = (context: IMethodsGetterContext<TReduxState>) => methodsGetter(context, this.methodsGetter(context));
     return this.next<TState, TNextMethods, TReduxState>({ methodsGetter: nextMethodsGetter });
   }
   public withState = <TNextState>(stateMapper: StateMapper<TState, TNextState>) => {

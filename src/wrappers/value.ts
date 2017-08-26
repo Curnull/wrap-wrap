@@ -2,7 +2,7 @@ import { getValueReducer, setValue, IValueState } from '../redux/index';
 import { createWrapper, Wrapper } from './index';
 
 export interface IValueWrapperMethods<T> {
-  set: (T) => void;
+  set: (value: T) => void;
 }
 
 export type ValueWrapper<T> = Wrapper<IValueState<T>, IValueWrapperMethods<T>>;

@@ -1,10 +1,11 @@
 {
-  "name": "wraptor",
-  "version": "1.0.0",
+  "name": "wrap-wrap",
+  "version": "1.0.1",
   "description": "Library which helps to avoid bunch of common React/Redux app problems",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "tsc -p ./ --outDir dist/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
