@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {default as hoistStatic} from 'hoist-non-react-statics';
+import hoistStatic from 'hoist-non-react-statics';
 import * as trigger from './trigger';
 import {or, and, WrapChainMapper, ChangePropsHandler} from './index';
 
@@ -23,8 +23,8 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
                                 changePropsCallback = () => {},
                               }: IWrapComponentParams<TWrappedComponentProps>): React.ComponentClass<TProps> {
   class WrappedComponent extends React.PureComponent<TProps, IWrappedComponentState> {
-    public static WrappedComponent: React.ComponentClass<TWrappedComponentProps>;
-    public static displayName: string;
+    public static WrappedComponent = ComponentToWrap;
+    public static displayName = `wrappedComponent(${ComponentToWrap.displayName || ComponentToWrap.name})`;
     private unsubscriptions: Array<() => void> = [];
     private updatesCount = 0;
     private updating = false;
@@ -102,8 +102,6 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
       this.internalProps = { ...this.internalProps, ...mapper(context, this.internalProps || {}) };
     }
   }
-  WrappedComponent.WrappedComponent = ComponentToWrap;
-  WrappedComponent.displayName = `wrappedComponent(${ComponentToWrap.displayName || ComponentToWrap.name})`;
-  const resultComponent =  hoistStatic(WrappedComponent, ComponentToWrap);
-  return extenders.reduce((result, extender) => extender(result), resultComponent);
+  const resultComponent =  hoistStatic<any, any>(WrappedComponent, ComponentToWrap);
+  return extenders.reduce((result, extender) => extender(result), resultComponent as React.ComponentClass<any>);
 }

@@ -2,20 +2,20 @@ import * as React from 'react';
 import {shape, func} from 'prop-types';
 import hoistStatic from 'hoist-non-react-statics';
 import * as actions from './redux/dynamicStore/dynamicStoreActions';
-import {getStateByName, Wrapper, IAction, IDynamicStoreItem} from './index';
+import {getStateByName, Wrapper, IAction, IDynamicStoreItem, dynamicStoreName} from './index';
 
-export interface ICreateDomainHostComponentParams {
+export interface ICreateDomainHostComponentParams<TProps> {
   wrappers: Array<Wrapper<any, any, any>>;
-  ComponentToWrap: React.ComponentClass<any>;
-  subscribe: (props: any) => Array<() => void>;
+  ComponentToWrap: React.ComponentClass<TProps>;
+  subscribe?: (props: any) => Array<() => void>;
 }
 
-export function createDomainHostComponent({
+export function createDomainHostComponent<TProps, TExtendedProps = {}>({
                                             wrappers,
                                             ComponentToWrap,
                                             subscribe = () => [],
-                                          }: ICreateDomainHostComponentParams) {
-  class DomainHostComponent extends React.PureComponent<any> {
+                                          }: ICreateDomainHostComponentParams<TProps>): React.ComponentClass<TProps & TExtendedProps> {
+  class DomainHostComponent extends React.PureComponent<TProps> {
     public static contextTypes = {
       store: shape({
         subscribe: func.isRequired,
@@ -48,9 +48,9 @@ export function createDomainHostComponent({
         dispatch(actionWrapper || action);
       };
 
-      this.getStoreState = () => store.getState().dynamic;
+      this.getStoreState = () => store.getState()[dynamicStoreName];
       this.checkIfStoreExists = (name) =>
-      name && Object.prototype.hasOwnProperty.call(store.getState().dynamic, name);
+      name && Object.prototype.hasOwnProperty.call(store.getState()[dynamicStoreName], name);
 
       const storesToAdd: Array<IDynamicStoreItem<any>> = [];
       this.storesToDelete = [];
@@ -106,5 +106,5 @@ export function createDomainHostComponent({
     }
   }
 
-  return hoistStatic(DomainHostComponent, ComponentToWrap);
+  return hoistStatic(DomainHostComponent, ComponentToWrap) as React.ComponentClass<TProps & TExtendedProps>;
 }

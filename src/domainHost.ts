@@ -21,9 +21,9 @@ function domain(name: string, wrappers: IWrappersStructure) {
   }, {} as IWrappersStructure);
 }
 
-export function domainHost(name: string, wrappers: IWrappersStructure, subscribe: () => Array<() => void>) {
+export function domainHost<TExternalProps>(name: string, wrappers: IWrappersStructure, subscribe?: (props: TExternalProps) => Array<() => void>) {
   const wrappersInDomain = domain(name, wrappers);
-  return extender((ComponentToWrap) =>  createDomainHostComponent({
+  return extender<{}, never, any, TExternalProps>((ComponentToWrap: React.ComponentClass) => createDomainHostComponent<any, TExternalProps>({
     wrappers: wrapperStructureToArray(wrappersInDomain),
     ComponentToWrap,
     subscribe,

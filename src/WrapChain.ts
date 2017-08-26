@@ -71,7 +71,7 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
     });
   }
 
-  public withExternalProps = <T, TCleanedProps extends keyof T>(...internalPropsNames: TCleanedProps[]) => {
+  public withExternalProps = <T, TCleanedProps extends keyof T = keyof T>(...internalPropsNames: TCleanedProps[]) => {
     return this.next<TInternalProps, TExtendedProps, TExternalProps & T>({
       internalPropsNames: [...this.internalPropsNames, ...internalPropsNames],
     });
@@ -103,7 +103,7 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
 
   public component = <TProps extends Partial<TInternalProps>>(component: React.ComponentClass<TProps>) => {
     const preWrapperComponent = this.preExtenders.reduce((result, extender) => extender(result), component);
-    return wrapComponent<TProps, Omit<TProps, keyof TInternalProps> & TExternalProps>(
+    return wrapComponent<Omit<TProps, keyof TInternalProps> & TExternalProps, TProps>(
       {
         ComponentToWrap: preWrapperComponent,
         mappers: this.mappers,

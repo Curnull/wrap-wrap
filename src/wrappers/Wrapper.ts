@@ -1,4 +1,4 @@
-import trigger from '../trigger';
+import { trigger } from '../trigger';
 import {IDynamicStoreItem, IAction} from '../index';
 
 export type WrapperSubscription<T> = (state: T) => void;
@@ -6,16 +6,16 @@ export interface IMethodsGetterContext<TReduxState> {
   getState: () => TReduxState;
   dispatch: (action: IAction<any>) => void;
 }
-export type MethodsGetter<TPrev, TNext, TReduxState> = (context: IMethodsGetterContext<TReduxState>, prev?: TPrev) => TNext;
+export type MethodsGetter<TPrev, TNext, TReduxState> = (context: IMethodsGetterContext<TReduxState>, prev: TPrev) => TNext;
 export type StateMapper<TPrev, TNext> = (nextUnmappedState: TPrev, prevUnmappedState: TPrev | undefined , prevState: TNext | undefined ) => TNext;
 export type StoreGetter<T> = () => Pick<IDynamicStoreItem<T>, 'reducer' | 'initialState'>;
 
 export interface IWrapperParams<TState, TMethods, TReduxState> {
   name: string;
-  methodsGetter: MethodsGetter<any, TMethods, TReduxState>;
+  methodsGetter?: (context: IMethodsGetterContext<TReduxState>) => TMethods;
   storeGetter?: StoreGetter<any>;
   isPermanent: boolean;
-  stateMapper: StateMapper<any, TState>;
+  stateMapper?: StateMapper<any, TState>;
 }
 
 export interface IMountWrapperParams {
@@ -25,7 +25,7 @@ export interface IMountWrapperParams {
 }
 
 const fakeSubsctiption = () => {};
-export class Wrapper<TState, TMethods, TReduxState> {
+export class Wrapper<TState, TMethods, TReduxState = TState> {
 
   public name: string;
   public get state(): TState {
@@ -52,13 +52,13 @@ export class Wrapper<TState, TMethods, TReduxState> {
   private triggeringSubs = false;
   private myMethods?: TMethods;
   private getState?: () => TReduxState;
-  private methodsGetter: MethodsGetter<any, TMethods, TReduxState>;
+  private methodsGetter: (context: IMethodsGetterContext<TReduxState>) => TMethods;
   private storeGetter?: StoreGetter<any>;
   private dispatch?: (action: IAction<any>) => void;
 
   public constructor({
                 name,
-                methodsGetter,
+                methodsGetter = () => ({} as TMethods),
                 storeGetter,
                 isPermanent,
                 stateMapper = (s) => s,
@@ -85,8 +85,7 @@ export class Wrapper<TState, TMethods, TReduxState> {
   }
   public withMethods = <TNextMethods>(methodsGetter: MethodsGetter<TMethods, TNextMethods, TReduxState>) => {
     this.shouldBeUnmounted();
-    const nextMethodsGetter: MethodsGetter<TMethods, TNextMethods, TReduxState> = (context) =>
-      methodsGetter(context, this.methodsGetter(context));
+    const nextMethodsGetter = (context) => methodsGetter(context, this.methodsGetter(context));
     return this.next<TState, TNextMethods, TReduxState>({ methodsGetter: nextMethodsGetter });
   }
   public withState = <TNextState>(stateMapper: StateMapper<TState, TNextState>) => {
@@ -121,7 +120,7 @@ export class Wrapper<TState, TMethods, TReduxState> {
     }
   }
 
-  public isChanged = (selector?: (s: TState) => boolean) => {
+  public isChanged = (selector?: (s: TState) => any) => {
     trigger(this);
     const changed = this.unmappedState !== this.prevUnmappedState;
     if (!changed || !selector) {

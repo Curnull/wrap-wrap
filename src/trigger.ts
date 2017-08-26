@@ -1,7 +1,7 @@
 let triggered: any[] = [];
 let started = false;
 
-export default function(obj: any) {
+export function trigger(obj: any) {
   if (started && triggered.indexOf(obj) === -1) {
     triggered.push(obj);
   }

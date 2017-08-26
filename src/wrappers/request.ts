@@ -1,7 +1,13 @@
-import { requestReducer, requestInitialState, setSending, setErrors, setResponse } from '../redux/index';
+import { requestReducer, requestInitialState, setSending, setErrors, setResponse, IRequestState } from '../redux/index';
 import { createWrapper, Wrapper } from './index';
 
-export default function request<TResp, TLoader extends (...p: any[]) => Promise<TResp>>(loader: TLoader, initialResponse?: TResp) {
+export interface RequestWrapperMethods<T, TLoader extends (...p: any[]) => Promise<T>> {
+  send: TLoader;
+}
+
+export type RequestWrapper<T, TLoader extends (...p: any[]) => Promise<T>> = Wrapper<IRequestState<T>, RequestWrapperMethods<T, TLoader>>;
+
+export function request<TResp, TLoader extends (...p: any[]) => Promise<TResp>>(loader: TLoader, initialResponse?: TResp): RequestWrapper<TResp, TLoader> {
   return createWrapper()
     .withStore(() => {
       return {

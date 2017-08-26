@@ -1,11 +1,23 @@
-import { listReducer, IListReducerState, listInitialState, setItems, addItem, deleteItem  } from '../redux/index';
+import { getListReducer, IListState, getListInitialState, setItems, addItem, deleteItem  } from '../redux/index';
 import { createWrapper, Wrapper } from './index';
 
-export function list<T>(items?: T[]) {
+export interface IListWrapperMethods<T> {
+  set: (items: T[]) => void;
+  setItem: (index: number, item: T) => void;
+  add: (items: T[] | T) => void;
+  remove: (items: T[] | T) => void;
+  isSelected: (T) => boolean;
+  toggleItem: (T) => void;
+  setProp: (index: number, field: string, value: any) => void;
+}
+
+export type ListWrapper<T> = Wrapper<IListState<T>, IListWrapperMethods<T>>;
+
+export function list<T>(items?: T[]): ListWrapper<T> {
   return createWrapper()
     .withStore(() => ({
-      reducer: listReducer,
-      initialState: items ? { items } : listInitialState,
+      initialState: items ? { items } : getListInitialState<T>(),
+      reducer: getListReducer<T>(),
     }))
     .withMethods(({ dispatch, getState }) => {
       const set = (items: T[]) => dispatch(setItems(items));

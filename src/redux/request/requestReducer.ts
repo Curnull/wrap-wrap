@@ -1,5 +1,6 @@
-import { createReducer } from 'redux-create-reducer';
-import { SET_SENDING, SET_ERRORS, SET_RESPONSE, ISetErrorsActionPayload, ISetSendingActionPayload, ISetResponseActionPayload } from './index';
+import { createReducer } from '../createReducer';
+import { SET_SENDING, SET_ERRORS, SET_RESPONSE } from './requestTypes';
+import {ISetErrorsActionPayload, ISetSendingActionPayload, ISetResponseActionPayload} from './requestActions';
 import {IAction} from '../index';
 
 export interface IRequestState<T> {
