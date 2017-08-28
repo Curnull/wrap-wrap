@@ -2,12 +2,12 @@
     "compilerOptions": {
       "target": "es5",
       "lib":["dom", "es6", "dom.iterable", "scripthost", "es2016.array.include", "es2017"],
-      "module": "es6",
+      "module": "commonjs",
       "declaration": true,
       "outDir": "./dist",
       "strict": true,
       "jsx": "react",
       "removeComments": true,
       "moduleResolution": "node"
-    }
   }
+}

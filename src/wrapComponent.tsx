@@ -1,5 +1,5 @@
 import * as React from 'react';
-import hoistStatic from 'hoist-non-react-statics';
+import * as hoistNonReactStatic from 'hoist-non-react-statics';
 import * as trigger from './trigger';
 import {or, and, WrapChainMapper, ChangePropsHandler} from './index';
 
@@ -102,6 +102,6 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
       this.internalProps = { ...this.internalProps, ...mapper(context, this.internalProps || {}) };
     }
   }
-  const resultComponent =  hoistStatic<any, any>(WrappedComponent, ComponentToWrap);
+  const resultComponent =  (hoistNonReactStatic as any)(WrappedComponent, ComponentToWrap);
   return extenders.reduce((result, extender) => extender(result), resultComponent as React.ComponentClass<any>);
 }

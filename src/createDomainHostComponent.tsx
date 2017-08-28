@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {shape, func} from 'prop-types';
-import hoistStatic from 'hoist-non-react-statics';
+import * as hoistNonReactStatic from 'hoist-non-react-statics';
 import * as actions from './redux/dynamicStore/dynamicStoreActions';
 import {getStateByName, Wrapper, IAction, IDynamicStoreItem, dynamicStoreName} from './index';
 
@@ -106,5 +106,5 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
     }
   }
 
-  return hoistStatic(DomainHostComponent, ComponentToWrap) as React.ComponentClass<TProps & TExtendedProps>;
+  return (hoistNonReactStatic as any)(DomainHostComponent, ComponentToWrap) as React.ComponentClass<TProps & TExtendedProps>;
 }
