@@ -6,7 +6,7 @@ export interface IListWrapperMethods<T> {
   setItem: (index: number, item: T) => void;
   add: (items: T[] | T) => void;
   remove: (items: T[] | T) => void;
-  includes: (item: T) => void;
+  includes: (item: T) => boolean;
   toggleItem: (item: T) => void;
   setProp: (index: number, field: string, value: any) => void;
 }
