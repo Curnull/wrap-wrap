@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
       "target": "es5",
-      "lib":["dom", "es6", "DOM.Iterable", "ScriptHost", "ES2016.Array.Include", "es2017"],
+      "lib":["dom", "es6", "dom.iterable", "scripthost", "es2016.array.include", "es2017"],
       "module": "es6",
       "declaration": true,
       "outDir": "./dist",
