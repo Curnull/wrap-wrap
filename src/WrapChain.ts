@@ -68,6 +68,7 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
       extenders: uniq([...this.extenders, ...chain.extenders]),
       mappers: [...this.mappers, ...chain.mappers],
       internalPropsNames: [...this.internalPropsNames, ...chain.internalPropsNames],
+      preExtenders: [...this.preExtenders, ...chain.preExtenders],
     });
   }
 
