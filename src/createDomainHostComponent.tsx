@@ -30,7 +30,9 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
     private getStoreState: () => any;
     private checkIfStoreExists: (name: string) => boolean;
     private storesToDelete: string[];
-    private unsubscriptions: Array<() => void>;
+    private unsubscriptions: Array<() => void> = [];
+    private prevState: any;
+    private currentState: any;
 
     public constructor(props: any, context: any) {
       super(props, context);
@@ -53,6 +55,13 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
       name && Object.prototype.hasOwnProperty.call(store.getState()[dynamicStoreName], name);
 
       const storesToAdd: Array<IDynamicStoreItem<any>> = [];
+
+      const moveStates = () => {
+        this.prevState = this.currentState;
+        this.currentState = this.getStoreState();
+      };
+      moveStates();
+      let activeAction = 0;
       this.storesToDelete = [];
       wrappers.forEach((wrapper) => {
         const storeName = wrapper.name;
@@ -79,18 +88,29 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
       if (storesToAdd.length) {
         this.dispatch(actions.addStores(storesToAdd));
       }
+      moveStates();
       wrappers.forEach((wrapperInfo) => {
         wrapperInfo.mount({
-          getState: () => getStateByName(wrapperInfo.name, this.getStoreState()),
+          getState: () => getStateByName(wrapperInfo.name, this.currentState),
+          getPrevState: () => getStateByName(wrapperInfo.name, this.prevState),
           props: this.props,
           dispatch: (action) => {
-            this.dispatch(action, wrapperInfo.name);
+            try {
+              activeAction ++;
+              this.dispatch(action, wrapperInfo.name);
+            } finally {
+              activeAction --;
+            }
+            if (activeAction === 0) {
+              moveStates();
+            }
             wrapperInfo.onChangeStore();
           }
         });
       });
+      moveStates();
       wrappers.forEach((wrapper) => wrapper.onChangeStore());
-      this.unsubscriptions = subscribe(this.props);
+      this.unsubscriptions = [...this.unsubscriptions, ...subscribe(this.props)];
     }
 
     public componentWillUnmount() {

@@ -7,7 +7,7 @@ export interface IMethodsGetterContext<TReduxState> {
   dispatch: (action: IAction<any>) => void;
 }
 export type MethodsGetter<TPrev, TNext, TReduxState> = (context: IMethodsGetterContext<TReduxState>, prev: TPrev) => TNext;
-export type StateMapper<TPrev, TNext> = (nextUnmappedState: TPrev, prevUnmappedState: TPrev | undefined , prevState: TNext | undefined ) => TNext;
+export type StateMapper<TPrev, TNext> = (nextState: TPrev) => TNext;
 export type StoreGetter<T> = () => Pick<IDynamicStoreItem<T>, 'reducer' | 'initialState'>;
 
 export interface IWrapperParams<TState, TMethods, TReduxState> {
@@ -18,9 +18,10 @@ export interface IWrapperParams<TState, TMethods, TReduxState> {
   stateMapper?: StateMapper<any, TState>;
 }
 
-export interface IMountWrapperParams {
-  getState: () => any;
-  dispatch: (action: IAction<any>) => any;
+export interface IMountWrapperParams<TState> {
+  getState: () => TState;
+  getPrevState: () => TState;
+  dispatch: (action: IAction<any>) => void;
   props: any;
 }
 
@@ -46,12 +47,13 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
   private subscriptions: Array<WrapperSubscription<TState>> = [];
   private stateMapper: StateMapper<any, TState>;
   private mappedState: TState;
-  private unmappedState: any;
-  private prevUnmappedState: any;
-  private prevMappedState: TState;
+  // private unmappedState: any;
+  // private prevUnmappedState: any;
+  // private prevMappedState: TState;
   private triggeringSubs = false;
   private myMethods?: TMethods;
   private getState?: () => TReduxState;
+  private getPrevState?: () => TReduxState;
   private methodsGetter: (context: IMethodsGetterContext<TReduxState>) => TMethods;
   private storeGetter?: StoreGetter<any>;
   private dispatch?: (action: IAction<any>) => void;
@@ -90,9 +92,9 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
   }
   public withState = <TNextState>(stateMapper: StateMapper<TState, TNextState>) => {
     this.shouldBeUnmounted();
-    let prevMappedState: TNextState | undefined;
-    const nextStateMapper = (state: TState) =>
-      prevMappedState = stateMapper(this.stateMapper(state, this.prevUnmappedState, this.mappedState), this.mappedState, prevMappedState);
+    let prevResult: TNextState | undefined;
+    const nextStateMapper = (nextState: TState) =>
+      prevResult = stateMapper(this.stateMapper(nextState));
     return this.next<TNextState, TMethods, TReduxState>({ stateMapper: nextStateMapper});
   }
   public withStore = <TReduxState>(storeGetter: StoreGetter<TReduxState>) => {
@@ -122,11 +124,12 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
 
   public isChanged = (selector?: (s: TState) => any) => {
     trigger(this);
-    const changed = this.unmappedState !== this.prevUnmappedState;
+    const changed = this.getState!() !== this.getPrevState!();
     if (!changed || !selector) {
       return changed;
     }
-    return selector(this.mappedState) !== selector(this.prevMappedState || {});
+    const prevState = this.getPrevState!();
+    return selector(this.mappedState) !== selector(prevState ? this.stateMapper(prevState) : {} as TState);
   }
 
   public subscribe = (subscription: WrapperSubscription<TState>) => {
@@ -143,13 +146,14 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
     };
   }
 
-  public mount({ getState, dispatch, props }: IMountWrapperParams) {
+  public mount({ getState, dispatch, props, getPrevState }: IMountWrapperParams<TReduxState>) {
     this.getState = getState;
+    this.getPrevState = getPrevState;
     this.dispatch = dispatch;
     this.myMethods = this.methodsGetter({
       getState: () => {
         trigger(this);
-        return this.unmappedState;
+        return this.getState!();
       }, dispatch
     });
     this.initState();
@@ -157,6 +161,7 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
 
   public unmount() {
     this.getState = undefined;
+    this.getPrevState = undefined;
     this.dispatch = undefined;
     this.myMethods = undefined;
   }
@@ -167,11 +172,8 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
   }
 
   private recalculateState = (nextState: TReduxState) => {
-    this.prevUnmappedState = this.unmappedState;
-    this.unmappedState = nextState;
-    this.prevMappedState = this.mappedState;
     if (this.isChanged()) {
-      this.mappedState = this.stateMapper(nextState, this.prevUnmappedState, this.mappedState);
+      this.mappedState = this.stateMapper(nextState);
     }
   }
 

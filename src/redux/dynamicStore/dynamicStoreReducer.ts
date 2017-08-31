@@ -25,6 +25,9 @@ try {
 const reducers: IReducersStore = {};
 export const NAME_SEPARATOR = '/';
 export function getStateByName(name: string, state: IDynamicState): any {
+  if (!state) {
+    return undefined;
+  }
   if (!__DEV__) {
     return state[name];
   }
