@@ -108,8 +108,8 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
           }
         });
       });
-      moveStates();
       wrappers.forEach((wrapper) => wrapper.onChangeStore());
+      moveStates();
       this.unsubscriptions = [...this.unsubscriptions, ...subscribe(this.props)];
     }
 
