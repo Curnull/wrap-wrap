@@ -1,27 +1,35 @@
 import * as React from 'react';
-import {shape, func} from 'prop-types';
+import {shape, func, object} from 'prop-types';
 import * as hoistNonReactStatic from 'hoist-non-react-statics';
 import * as actions from './redux/dynamicStore/dynamicStoreActions';
-import {getStateByName, Wrapper, IAction, IDynamicStoreItem, dynamicStoreName} from './index';
+import {getStateByName, Wrapper, IAction, IDynamicStoreItem, dynamicStoreName, NAME_SEPARATOR} from './index';
+import {isWrapper, wrapperStructureToArray, forEachWrapper, NameOrGetter, WrappersStructureOrGetter} from './utils';
 
 export interface ICreateDomainHostComponentParams<TProps> {
-  wrappers: Array<Wrapper<any, any, any>>;
-  ComponentToWrap: React.ComponentClass<TProps>;
+  wrappersOrGetter: any;
+  ComponentToWrap: React.ComponentType<TProps>;
   subscribe?: (props: any) => Array<() => void>;
+  nameOrGetter: NameOrGetter<TProps>;
 }
 
 export function createDomainHostComponent<TProps, TExtendedProps = {}>({
-                                            wrappers,
+                                            wrappersOrGetter,
                                             ComponentToWrap,
                                             subscribe = () => [],
-                                          }: ICreateDomainHostComponentParams<TProps>): React.ComponentClass<TProps & TExtendedProps> {
+                                            nameOrGetter,
+                                          }: ICreateDomainHostComponentParams<TProps>): React.ComponentType<TProps & TExtendedProps> {
+
   class DomainHostComponent extends React.PureComponent<TProps> {
     public static contextTypes = {
       store: shape({
         subscribe: func.isRequired,
         dispatch: func.isRequired,
         getState: func.isRequired,
-      })
+      }),
+      domains: object,
+    };
+    public static childContextTypes = {
+      domains: object,
     };
     public static WrappedComponent = ComponentToWrap;
     public static displayName = `domainHost(${ComponentToWrap.displayName || ComponentToWrap.name})`;
@@ -33,9 +41,27 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
     private unsubscriptions: Array<() => void> = [];
     private prevState: any;
     private currentState: any;
+    private domain: any;
+    private name: string;
+    private wrappers: Array<Wrapper<any, any>>;
 
     public constructor(props: any, context: any) {
       super(props, context);
+      this.context = context;
+      this.domain = wrappersOrGetter;
+      if (typeof wrappersOrGetter === 'function') {
+        this.domain = wrappersOrGetter(props);
+      }
+
+      if (typeof nameOrGetter === 'function') {
+        this.name = nameOrGetter(props);
+      } else {
+        this.name = nameOrGetter;
+      }
+      this.wrappers = [];
+      forEachWrapper(this.domain, (wrapper, context) => {
+        this.wrappers.push(wrapper.withName(`${this.name}.${context.path}`.replace('.', NAME_SEPARATOR)));
+      });
       const { store } = context;
       if (!store) {
         throw new Error('DomainHostComponent: Unable to find store instance in context!');
@@ -63,7 +89,7 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
       moveStates();
       let activeAction = 0;
       this.storesToDelete = [];
-      wrappers.forEach((wrapper) => {
+      this.wrappers.forEach((wrapper) => {
         const storeName = wrapper.name;
         if (this.checkIfStoreExists(storeName)) {
           return;
@@ -89,7 +115,7 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
         this.dispatch(actions.addStores(storesToAdd));
       }
       moveStates();
-      wrappers.forEach((wrapperInfo) => {
+      this.wrappers.forEach((wrapperInfo) => {
         wrapperInfo.mount({
           getState: () => getStateByName(wrapperInfo.name, this.currentState),
           getPrevState: () => getStateByName(wrapperInfo.name, this.prevState),
@@ -108,14 +134,14 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
           }
         });
       });
-      wrappers.forEach((wrapper) => wrapper.onChangeStore());
+      this.wrappers.forEach((wrapper) => wrapper.onChangeStore());
       moveStates();
       this.unsubscriptions = [...this.unsubscriptions, ...subscribe(this.props)];
     }
 
     public componentWillUnmount() {
       this.unsubscriptions.forEach((u) => u && u());
-      wrappers.forEach((w) => w.unmount());
+      this.wrappers.forEach((w) => w.unmount());
       if (this.storesToDelete.length) {
         this.dispatch(actions.deleteStores(this.storesToDelete));
       }
@@ -124,7 +150,11 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
     public render() {
       return <ComponentToWrap {...this.props} />;
     }
+    private getChildContext() {
+      const domains = this.context.domains || {};
+      return { domains: { ...domains, [this.name]: this.domain}};
+    }
   }
 
-  return (hoistNonReactStatic as any)(DomainHostComponent, ComponentToWrap) as React.ComponentClass<TProps & TExtendedProps>;
+  return (hoistNonReactStatic as any)(DomainHostComponent, ComponentToWrap) as React.ComponentType<TProps & TExtendedProps>;
 }

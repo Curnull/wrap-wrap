@@ -27,16 +27,16 @@ export interface IPropsGetterContext<TProps> {
 export interface IWrapChainParams<TProps> {
   mappers?: Array<WrapChainMapper<any, any, any>>;
   changePropsCallback?: ChangePropsHandler<TProps>;
-  extenders?: Array<(c: React.ComponentClass<any>) => React.ComponentClass<any>>;
-  preExtenders?: Array<(c: React.ComponentClass<any>) => React.ComponentClass<any>>;
+  extenders?: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
+  preExtenders?: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
   internalPropsNames?: string[];
 }
 
 export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
   private mappers: Array<WrapChainMapper<any, any, any>>;
   private changePropsCallback: ChangePropsHandler<TExternalProps & TExtendedProps>;
-  private extenders: Array<(c: React.ComponentClass<any>) => React.ComponentClass<any>>;
-  private preExtenders: Array<(c: React.ComponentClass<any>) => React.ComponentClass<any>>;
+  private extenders: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
+  private preExtenders: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
   private internalPropsNames: string[];
 
   constructor({
@@ -98,11 +98,11 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
     });
   }
 
-  public extendBeforeWrap = (extender: (c: React.ComponentClass<any>) => React.ComponentClass<any>) => {
+  public extendBeforeWrap = (extender: (c: React.ComponentType<any>) => React.ComponentType<any>) => {
     return this.next({ preExtenders: [...this.preExtenders, extender] });
   }
 
-  public component = <TProps extends Partial<TInternalProps>>(component: React.ComponentClass<TProps>) => {
+  public component = <TProps extends Partial<TInternalProps>>(component: React.ComponentType<TProps>) => {
     const preWrapperComponent = this.preExtenders.reduce((result, extender) => extender(result), component);
     return wrapComponent<Omit<TProps, keyof TInternalProps> & TExternalProps, TProps>(
       {

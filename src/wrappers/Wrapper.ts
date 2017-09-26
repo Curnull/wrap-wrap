@@ -112,9 +112,6 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
       try{
         this.subscriptions.forEach((s) => s(this.mappedState));
       }
-      catch (e) {
-        console.error(`Error while triggering subscriptions in ${this.name}: ${e}`);
-      }
       finally {
         this.triggeringSubs = false;
         this.subscriptions = this.subscriptions.filter((s) => s !== fakeSubsctiption);

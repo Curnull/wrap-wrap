@@ -4,5 +4,7 @@ export * from './extender';
 export * from './WrapChain';
 export * from './utils';
 export * from './domainHost';
+export * from './domain';
 export * from './wrapComponent';
 export * from './createDomainHostComponent';
+export * from './createDomainComponent';
