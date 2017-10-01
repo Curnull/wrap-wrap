@@ -1,4 +1,4 @@
-import {Wrapper, IWrappersStructure} from './index';
+import {Wrapper, IWrappersStructure, NAME_SEPARATOR} from './index';
 
 export function or(...args: any[]) {
     let result = args[0];
@@ -68,3 +68,6 @@ export function forEachWrapper(
         return result;
     }, {});
 }
+
+export const replaceAll = (target: string, search: string, replacement: string) =>
+    target.split(search).join(replacement);

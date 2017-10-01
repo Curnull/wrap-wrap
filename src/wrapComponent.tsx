@@ -15,6 +15,10 @@ export interface IWrappedComponentState {
   coin: boolean;
 }
 
+const getDifferentTypesOfValueError = (key: string, displayName: string) => `Different types of props by key '${key}' specified in .withProps for component '${displayName}'.
+        Please check your wrap chain for component ${displayName} and make sure that all props with key '${key}' have only functions or only non-function values.
+        `;
+
 export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedComponentProps>({
                                 ComponentToWrap,
                                 mappers,
@@ -29,6 +33,7 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
     private updatesCount = 0;
     private updating = false;
     private internalProps: any;
+    private functionsStore: Array<{[key: string]: (...params: any[]) => any}> = [];
 
     constructor(props: TProps, context: any) {
       super(props, context);
@@ -73,35 +78,74 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
       });
     }
 
-    private subscribeToWrappers = (mapper: WrapChainMapper<any, any, any>) => {
+    private subscribeToWrappers = (mapper: WrapChainMapper<any, any, any>, index: number) => {
       try {
         trigger.start();
-        this.calculateInternalProps(mapper);
+        this.calculateInternalProps(mapper, index);
         const wrappers = trigger.getTriggered();
         wrappers.forEach((wrapper) => {
           const unsubscription = wrapper.subscribe(() => {
-            this.calculateInternalProps(mapper);
+            this.calculateInternalProps(mapper, index);
             this.updatesCount ++;
             this.update();
           });
           this.unsubscriptions.push(unsubscription);
         });
-      } catch (e) {
+      } finally {
         trigger.stop();
-        throw e;
       }
-      trigger.stop();
     }
 
-    private calculateInternalProps = (mapper: WrapChainMapper<any, any, any>) => {
+    private calculateInternalProps = (mapper: WrapChainMapper<any, any, any>, index: number) => {
       const context = {
         getProps: () => this.props,
         or,
         and,
       };
-      this.internalProps = { ...this.internalProps, ...mapper(context, this.internalProps || {}) };
+      const newProps = mapper(context, this.internalProps || {});
+
+      this.internalProps = { ...this.internalProps};
+      Object.keys(newProps).forEach((key) => {
+        let val = newProps[key];
+        if (typeof val === 'function') {
+          this.functionsStore[index] = this.functionsStore[index] || {};
+          this.functionsStore[index][key] = val;
+          if (!this.internalProps[key]) {
+            val = (...params: any[]) => this.triggerAllFunctionsByKey(key, ...params);
+          } else {
+            if (typeof this.internalProps[key] !== 'function') {
+              throw new Error(getDifferentTypesOfValueError(key, WrappedComponent.displayName));
+            }
+            val = this.internalProps[key];
+          }
+        } else if (typeof this.internalProps[key] === 'function') {
+            throw new Error(getDifferentTypesOfValueError(key, WrappedComponent.displayName));
+        }
+        this.internalProps[key] = val;
+      });
+    }
+
+    private triggerAllFunctionsByKey = (key: string, ...params: any[]) => {
+      let lastNotUndefinedResult;
+      let countOfNotUndefinedResults = 0;
+      this.functionsStore.forEach((funcs) => {
+        if (funcs[key]) {
+          const r = funcs[key](...params);
+          if (r !== undefined) {
+            countOfNotUndefinedResults ++;
+            lastNotUndefinedResult = r;
+          }
+        }
+      });
+      if (countOfNotUndefinedResults > 1) {
+        throw new Error(`You specified two or more functions with the same key ${key} in several .withProps for the same component and several functions returned value.
+         In order to fix this error please make sure that all function with the same key return undefined, or you have only one function which return value.
+        `);
+      }
+      return lastNotUndefinedResult;
     }
   }
+
   const resultComponent =  (hoistNonReactStatic as any)(WrappedComponent, ComponentToWrap);
   return extenders.reduce((result, extender) => extender(result), resultComponent as React.ComponentType<any>);
 }

@@ -3,7 +3,7 @@ import {shape, func, object} from 'prop-types';
 import * as hoistNonReactStatic from 'hoist-non-react-statics';
 import * as actions from './redux/dynamicStore/dynamicStoreActions';
 import {getStateByName, Wrapper, IAction, IDynamicStoreItem, dynamicStoreName, NAME_SEPARATOR} from './index';
-import {isWrapper, wrapperStructureToArray, forEachWrapper, NameOrGetter, WrappersStructureOrGetter} from './utils';
+import {isWrapper, wrapperStructureToArray, forEachWrapper, NameOrGetter, WrappersStructureOrGetter, replaceAll} from './utils';
 
 export interface ICreateDomainHostComponentParams<TProps> {
   wrappersOrGetter: any;
@@ -60,7 +60,8 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
       }
       this.wrappers = [];
       forEachWrapper(this.domain, (wrapper, context) => {
-        this.wrappers.push(wrapper.withName(`${this.name}.${context.path}`.replace('.', NAME_SEPARATOR)));
+        const name = replaceAll(`${this.name}.${context.path}`, '.', NAME_SEPARATOR);
+        this.wrappers.push(wrapper.withName(name));
       });
       const { store } = context;
       if (!store) {
