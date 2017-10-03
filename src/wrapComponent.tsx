@@ -15,6 +15,8 @@ export interface IWrappedComponentState {
   coin: boolean;
 }
 
+const isClassComponent = (component: any) => !!component.prototype.isReactComponent;
+
 const getDifferentTypesOfValueError = (key: string, displayName: string) => `Different types of props by key '${key}' specified in .withProps for component '${displayName}'.
         Please check your wrap chain for component ${displayName} and make sure that all props with key '${key}' have only functions or only non-function values.
         `;
@@ -107,7 +109,7 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
       this.internalProps = { ...this.internalProps};
       Object.keys(newProps).forEach((key) => {
         let val = newProps[key];
-        if (typeof val === 'function') {
+        if (typeof val === 'function' && !isClassComponent(val)) {
           this.functionsStore[index] = this.functionsStore[index] || {};
           this.functionsStore[index][key] = val;
           if (!this.internalProps[key]) {
@@ -129,7 +131,7 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
       let lastNotUndefinedResult;
       let countOfNotUndefinedResults = 0;
       this.functionsStore.forEach((funcs) => {
-        if (funcs[key]) {
+        if (funcs && funcs[key]) {
           const r = funcs[key](...params);
           if (r !== undefined) {
             countOfNotUndefinedResults ++;
