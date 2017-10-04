@@ -11,8 +11,7 @@ export function domain<TExternalProps, TDomain>(nameGetter: (props: TExternalPro
       use: <TChainInternalProps, TChainExternalProps>(chainGetter: (domain: TDomain) => WrapChain<TChainInternalProps, any, TChainExternalProps>) => ({
         component:  <TProps extends Partial<TChainInternalProps>>(ComponentToWrap: React.ComponentType<TProps>) => createDomainComponent({
           ComponentToWrap,
-          chainGetter,
-          nameGetter
+          chainGetter
         })
       }),
     };

@@ -8,20 +8,18 @@ import {isWrapper, wrapperStructureToArray, forEachWrapper, NameOrGetter, Wrappe
 export interface IDomainHOCParams<TDomain, TProps, TChainInternalProps, TChainExternalProps> {
     ComponentToWrap: React.ComponentType<TProps>;
     chainGetter: (domain: TDomain) => WrapChain<TChainInternalProps, any, TChainExternalProps>;
-    nameGetter: (props: any) => string;
 }
 
 export function createDomainComponent<TDomain, TChainInternalProps, TChainExternalProps, TProps extends Partial<TChainInternalProps>>({
     ComponentToWrap,
     chainGetter,
-    nameGetter
 }: IDomainHOCParams<TDomain, TProps, TChainInternalProps, TChainExternalProps>
 ) {
 
   type ResultProps = Omit<TProps, keyof TChainInternalProps> & TChainExternalProps;
   class DomainComponent extends React.PureComponent<ResultProps> {
     public static contextTypes = {
-        domains: object
+        domain: object
     };
     public static WrappedComponent = ComponentToWrap;
     public static displayName = `domain(${ComponentToWrap.displayName || ComponentToWrap.name})`;
@@ -29,11 +27,10 @@ export function createDomainComponent<TDomain, TChainInternalProps, TChainExtern
 
     public constructor(props: ResultProps, context: any) {
         super(props);
-        const name = nameGetter(props);
-        if (!context || !context.domains || !context.domains[name]) {
-            throw new Error(`Domain with name ${name} not found in react context! Make sure you hosted the domain and host component is mounted!`);
+        if (!context || !context.domain) {
+            throw new Error(`Domain not found in react context! Make sure you hosted the domain and host component is mounted!`);
         }
-        const domain = context.domains[name];
+        const domain = context.domain;
         const chain = chainGetter(domain);
         this.FinalComponent = chain.component(ComponentToWrap);
     }

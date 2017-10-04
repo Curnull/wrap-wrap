@@ -25,11 +25,10 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
         subscribe: func.isRequired,
         dispatch: func.isRequired,
         getState: func.isRequired,
-      }),
-      domains: object,
+      })
     };
     public static childContextTypes = {
-      domains: object,
+      domain: object,
     };
     public static WrappedComponent = ComponentToWrap;
     public static displayName = `domainHost(${ComponentToWrap.displayName || ComponentToWrap.name})`;
@@ -152,8 +151,7 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
       return <ComponentToWrap {...this.props} />;
     }
     private getChildContext() {
-      const domains = this.context.domains || {};
-      return { domains: { ...domains, [this.name]: this.domain}};
+      return { domain: this.domain};
     }
   }
 
