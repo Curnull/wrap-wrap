@@ -1,6 +1,6 @@
 {
   "name": "wrap-wrap",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Library which helps to avoid bunch of common React/Redux app problems",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
