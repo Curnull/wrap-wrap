@@ -120,7 +120,7 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
             }
             val = this.internalProps[key];
           }
-        } else if (typeof this.internalProps[key] === 'function') {
+        } else if (typeof this.internalProps[key] === 'function' && !isClassComponent(this.internalProps[key])) {
             throw new Error(getDifferentTypesOfValueError(key, WrappedComponent.displayName));
         }
         this.internalProps[key] = val;
