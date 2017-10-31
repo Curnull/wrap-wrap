@@ -12,6 +12,22 @@ export interface ICreateDomainHostComponentParams<TProps> {
   nameOrGetter: NameOrGetter<TProps>;
 }
 
+export const defaultDynamicStateGetter = (state: any) => state[dynamicStoreName];
+
+let getStateDynamicState = defaultDynamicStateGetter;
+
+export const setDynamicStateGetter = (getter: (state: any) => any) => {
+  getStateDynamicState = getter;
+};
+
+export const defaultActionCreator = (action: any, name: string) => name ? actions.sendActionToDynamicStore(name, action) : action;
+
+let actionCreator = defaultActionCreator;
+
+export const setActionCreator = (newActionCreator: (action: any, name: string) => any) => {
+  actionCreator = newActionCreator;
+};
+
 export function createDomainHostComponent<TProps, TExtendedProps = {}>({
                                             wrappersOrGetter,
                                             ComponentToWrap,
@@ -71,14 +87,11 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
         throw new Error('DomainHostComponent: Unable to find dispatch func in context!');
       }
 
-      this.dispatch = (action, name) => {
-        const actionWrapper = name ? actions.sendActionToDynamicStore(name, action) : null;
-        dispatch(actionWrapper || action);
-      };
+      this.dispatch = (action: any, name: string) => dispatch(actionCreator(action, name));
 
-      this.getStoreState = () => store.getState()[dynamicStoreName];
+      this.getStoreState = () => getStateDynamicState(store.getState());
       this.checkIfStoreExists = (name) =>
-      name && Object.prototype.hasOwnProperty.call(store.getState()[dynamicStoreName], name);
+      name && Object.prototype.hasOwnProperty.call(getStateDynamicState(store.getState()), name);
 
       const storesToAdd: Array<IDynamicStoreItem<any>> = [];
 

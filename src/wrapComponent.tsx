@@ -43,8 +43,8 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
     }
 
     public componentWillMount() {
-      mappers.forEach(this.subscribeToWrappers);
       changePropsCallback(this.props, {}, true);
+      mappers.forEach(this.subscribeToWrappers);
     }
 
     public componentWillReceiveProps(nextProps: TProps) {

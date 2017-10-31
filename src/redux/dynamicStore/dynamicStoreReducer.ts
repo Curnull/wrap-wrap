@@ -80,46 +80,44 @@ function deleteByName(name: string, state: IDynamicState) {
   }, {} as IDynamicState);
 }
 
-export let dynamicStoreName = 'dynamic';
+export const dynamicStoreName = 'dynamic';
 export const dynamicStoreInitialState: IDynamicState = {};
-export const getDynamicStoreReducer = (storeName = 'dynamic') => {
-    dynamicStoreName = storeName;
-    return createReducer(dynamicStoreInitialState, {
-      [types.SEND_ACTION_TO_DYNAMIC_STORE]: (state: IDynamicState, action: IAction<ISendActionToDynamicStoreActionPayload>) => {
-        const name = action.payload.name;
-        const subAction = action.payload.action;
-        if (reducers[name]) {
-          const reducer = reducers[name];
-          const curState = getStateByName(name, state);
-          const nextState = reducer(curState, subAction);
-          const newState = {
-            ...state,
-          };
-          putByName(nextState, name, newState);
-          return newState;
-        }
-        return state;
-      },
-      [types.ADD_STORES]: (state: IDynamicState, action: IAction<IAddStoreActionPayload>) => {
-        const newState = { ...state };
-
-        action.payload.stores.forEach((store) => {
-          if (!reducers[store.name]) {
-            reducers[store.name] = store.reducer;
-            const reducedState = store.reducer(store.initialState, { type: '', payload: undefined });
-            putByName(reducedState, store.name, newState);
-          }
-        });
-        return newState;
-      },
-      [types.DELETE_STORES]: (state: IDynamicState, action: IAction<IDeleteStoreActionPayload>) => {
-        let newState = {...state};
-        action.payload.names.forEach((name) => {
-          delete reducers[name];
-          newState = deleteByName(name, newState);
-        });
-        return newState;
-      },
+export const dynamicReducerActionsHandlers = {
+  [types.SEND_ACTION_TO_DYNAMIC_STORE]: (state: IDynamicState, action: IAction<ISendActionToDynamicStoreActionPayload>) => {
+    const name = action.payload.name;
+    const subAction = action.payload.action;
+    if (reducers[name]) {
+      const reducer = reducers[name];
+      const curState = getStateByName(name, state);
+      const nextState = reducer(curState, subAction);
+      const newState = {
+        ...state,
+      };
+      putByName(nextState, name, newState);
+      return newState;
     }
-  );
+    return state;
+  },
+  [types.ADD_STORES]: (state: IDynamicState, action: IAction<IAddStoreActionPayload>) => {
+    const newState = { ...state };
+
+    action.payload.stores.forEach((store) => {
+      if (!reducers[store.name]) {
+        reducers[store.name] = store.reducer;
+        const reducedState = store.reducer(store.initialState, { type: '', payload: undefined });
+        putByName(reducedState, store.name, newState);
+      }
+    });
+    return newState;
+  },
+  [types.DELETE_STORES]: (state: IDynamicState, action: IAction<IDeleteStoreActionPayload>) => {
+    let newState = {...state};
+    action.payload.names.forEach((name) => {
+      delete reducers[name];
+      newState = deleteByName(name, newState);
+    });
+    return newState;
+  }
 };
+
+export const dynamicStoreReducer = createReducer(dynamicStoreInitialState, dynamicReducerActionsHandlers);
