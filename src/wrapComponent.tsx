@@ -15,7 +15,7 @@ export interface IWrappedComponentState {
   coin: boolean;
 }
 
-const isClassComponent = (component: any) => !!component.prototype.isReactComponent;
+const isClassComponent = (component: any) => component.prototype && !!component.prototype.isReactComponent;
 
 const getDifferentTypesOfValueError = (key: string, displayName: string) => `Different types of props by key '${key}' specified in .withProps for component '${displayName}'.
         Please check your wrap chain for component ${displayName} and make sure that all props with key '${key}' have only functions or only non-function values.
