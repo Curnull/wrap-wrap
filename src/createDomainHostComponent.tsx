@@ -75,6 +75,9 @@ export function createDomainHostComponent<TProps, TExtendedProps = {}>({
       }
       this.wrappers = [];
       forEachWrapper(this.domain, (wrapper, context) => {
+        if (wrapper.isMounted) {
+          return;
+        }
         const name = replaceAll(`${this.name}.${context.path}`, '.', NAME_SEPARATOR);
         this.wrappers.push(wrapper.withName(name));
       });
