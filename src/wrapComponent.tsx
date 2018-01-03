@@ -87,9 +87,10 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
         const wrappers = trigger.getTriggered();
         wrappers.forEach((wrapper) => {
           const unsubscription = wrapper.subscribe(() => {
-            this.calculateInternalProps(mapper, index);
-            this.updatesCount ++;
-            this.update();
+            if (this.calculateInternalProps(mapper, index)) {
+              this.updatesCount ++;
+              this.update();
+            }
           });
           this.unsubscriptions.push(unsubscription);
         });
@@ -105,7 +106,7 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
         and,
       };
       const newProps = mapper(context, this.internalProps || {});
-
+      let haveChanges = false;
       this.internalProps = { ...this.internalProps};
       Object.keys(newProps).forEach((key) => {
         let val = newProps[key];
@@ -123,8 +124,12 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
         } else if (typeof this.internalProps[key] === 'function' && !isClassComponent(this.internalProps[key])) {
             throw new Error(getDifferentTypesOfValueError(key, WrappedComponent.displayName));
         }
-        this.internalProps[key] = val;
+        if (this.internalProps[key] !== val) {
+          haveChanges = true;
+          this.internalProps[key] = val;
+        }
       });
+      return haveChanges;
     }
 
     private triggerAllFunctionsByKey = (key: string, ...params: any[]) => {
