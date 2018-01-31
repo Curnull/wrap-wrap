@@ -1,7 +1,9 @@
 import * as React from 'react';
+import {object} from 'prop-types';
 import * as hoistNonReactStatic from 'hoist-non-react-statics';
-import * as trigger from './trigger';
-import {or, and, WrapChainMapper, ChangePropsHandler} from './index';
+import * as trigger from '../trigger';
+import {or, and, WrapChainMapper, ChangePropsHandler} from '../index';
+import {IDomainHost} from '../domainHost';
 
 export interface IWrapComponentParams<TProps> {
   ComponentToWrap: React.ComponentType<TProps>;
@@ -9,6 +11,7 @@ export interface IWrapComponentParams<TProps> {
   extenders: Array<(c: React.ComponentType) => React.ComponentType>;
   internalPropsNames: string[];
   changePropsCallback: ChangePropsHandler<any>;
+  domainHostGetter: (props: any) => IDomainHost<any> | undefined;
 }
 
 export interface IWrappedComponentState {
@@ -27,19 +30,33 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
                                 extenders,
                                 internalPropsNames = [],
                                 changePropsCallback = () => {},
+                                domainHostGetter = () => undefined
                               }: IWrapComponentParams<TWrappedComponentProps>): React.ComponentType<TProps> {
+
+  if (ComponentToWrap === undefined) {
+    throw new Error(`ComponentToWrap is undefined! Ensure that all .component(ComponentToWrap) work with valid componentns.`);
+  }
   class WrappedComponent extends React.PureComponent<TProps, IWrappedComponentState> {
     public static WrappedComponent = ComponentToWrap;
     public static displayName = `wrappedComponent(${ComponentToWrap.displayName || ComponentToWrap.name})`;
+    public static childContextTypes = {
+      domain: object,
+    };
     private unsubscriptions: Array<() => void> = [];
     private updatesCount = 0;
     private updating = false;
     private internalProps: any;
     private functionsStore: Array<{[key: string]: (...params: any[]) => any}> = [];
+    private domainHost: IDomainHost<any> | undefined;
+    private domain: any;
 
     constructor(props: TProps, context: any) {
       super(props, context);
       this.state = { coin: true };
+      this.domainHost = domainHostGetter(this.props as any);
+      if (this.domainHost) {
+        this.domain = this.domainHost.mount();
+      }
     }
 
     public componentWillMount() {
@@ -53,6 +70,9 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
 
     public componentWillUnmount() {
       this.unsubscriptions.forEach((u) => u());
+      if (this.domainHost) {
+        this.domainHost.unmount();
+      }
     }
 
     public render() {
@@ -151,8 +171,12 @@ export function wrapComponent<TProps extends {[pn: string]: any }, TWrappedCompo
       }
       return lastNotUndefinedResult;
     }
+
+    private getChildContext() {
+      return { domain: this.domain};
+    }
   }
 
   const resultComponent =  (hoistNonReactStatic as any)(WrappedComponent, ComponentToWrap);
-  return extenders.reduce((result, extender) => extender(result), resultComponent as React.ComponentType<any>);
+  return extenders.reduce((result, extender) => extender(result), resultComponent as React.ComponentType<any>) as any;
 }

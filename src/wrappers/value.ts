@@ -1,26 +1,20 @@
-import { getValueReducer, setValue, IValueState } from '../redux/index';
-import { createWrapper, Wrapper } from './index';
+import { Wrapper } from '../Wrapper';
+import { object } from './object';
 
 export interface IValueWrapperMethods<T> {
   set: (value: T) => void;
 }
-
+export interface IValueState<T> {
+  value: T;
+}
 export type ValueWrapper<T> = Wrapper<IValueState<T>, IValueWrapperMethods<T>>;
 
 export function value<T = any>(value?: T): ValueWrapper<T>{
-  return createWrapper()
-    .withStore(() => {
-      return {
-        initialState: {
-          value: value!,
-        },
-        reducer: getValueReducer<T>(value!),
-      };
-    })
-    .withMethods(({ dispatch, getState }) => {
+  return object({value} as IValueState<T>)
+    .withMethods(({getState}, {merge}) => {
       const set = (val: T) => {
         if (getState().value !== val) {
-          dispatch(setValue(val));
+          merge({ value: val });
         }
       };
       return { set };

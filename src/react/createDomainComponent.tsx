@@ -1,9 +1,10 @@
 import * as React from 'react';
 import {object} from 'prop-types';
+import {Omit} from '../';
 import * as hoistNonReactStatic from 'hoist-non-react-statics';
-import * as actions from './redux/dynamicStore/dynamicStoreActions';
-import {WrapChain, Omit} from './index';
-import {isWrapper, wrapperStructureToArray, forEachWrapper, NameOrGetter, WrappersStructureOrGetter} from './utils';
+import {isWrapper, wrapperStructureToArray, forEachWrapper, NameOrGetter, WrappersStructureOrGetter} from '../utils';
+import { WrapChain } from './WrapChain';
+import {IDomainHost} from '../domainHost';
 
 export interface IDomainHOCParams<TDomain, TProps, TChainInternalProps, TChainExternalProps> {
     ComponentToWrap: React.ComponentType<TProps>;
@@ -43,3 +44,15 @@ export function createDomainComponent<TDomain, TChainInternalProps, TChainExtern
 
   return (hoistNonReactStatic as any)(DomainComponent, ComponentToWrap) as React.ComponentType<ResultProps>;
 }
+
+export function domain<TExternalProps, TDomain>(domainHostGetter: (props: TExternalProps) => IDomainHost<TDomain>) {
+    return {
+      host: domainHostGetter,
+      use: <TChainInternalProps, TChainExternalProps>(chainGetter: (domain: TDomain) => WrapChain<TChainInternalProps, any, TChainExternalProps>) => ({
+        component:  <TProps extends Partial<TChainInternalProps>>(ComponentToWrap: React.ComponentType<TProps>) => createDomainComponent({
+          ComponentToWrap,
+          chainGetter
+        })
+      }),
+    };
+  }

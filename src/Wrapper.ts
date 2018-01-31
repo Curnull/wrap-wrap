@@ -1,19 +1,18 @@
-import { trigger } from '../trigger';
-import {IDynamicStoreItem, IAction} from '../index';
+import { trigger } from './trigger';
 
 export type WrapperSubscription<T> = (state: T) => void;
-export interface IMethodsGetterContext<TReduxState> {
-  getState: () => TReduxState;
-  dispatch: (action: IAction<any>) => void;
+export interface IMethodsGetterContext<TStorageState> {
+  getState: () => TStorageState;
+  setState: (state: any) => void;
 }
-export type MethodsGetter<TPrev, TNext, TReduxState> = (context: IMethodsGetterContext<TReduxState>, prev: TPrev) => TNext;
+export type MethodsGetter<TPrev, TNext, TStorageState> = (context: IMethodsGetterContext<TStorageState>, prev: TPrev) => TNext;
 export type StateMapper<TPrev, TNext> = (nextState: TPrev) => TNext;
-export type StoreGetter<T> = () => Pick<IDynamicStoreItem<T>, 'reducer' | 'initialState'>;
+export type InitialStateGetter<TCurState, TAddon> = (initialState: TCurState) => TAddon;
 
-export interface IWrapperParams<TState, TMethods, TReduxState> {
+export interface IWrapperParams<TState, TMethods, TStorageState> {
   name: string;
-  methodsGetter?: (context: IMethodsGetterContext<TReduxState>) => TMethods;
-  storeGetter?: StoreGetter<any>;
+  methodsGetter?: (context: IMethodsGetterContext<TStorageState>) => TMethods;
+  initialStateGetter?: InitialStateGetter<any, TStorageState>;
   isPermanent: boolean;
   stateMapper?: StateMapper<any, TState>;
 }
@@ -21,12 +20,11 @@ export interface IWrapperParams<TState, TMethods, TReduxState> {
 export interface IMountWrapperParams<TState> {
   getState: () => TState;
   getPrevState: () => TState;
-  dispatch: (action: IAction<any>) => void;
-  props: any;
+  setState: (state: any) => void;
 }
 
 const fakeSubsctiption = () => {};
-export class Wrapper<TState, TMethods, TReduxState = TState> {
+export class Wrapper<TState, TMethods, TStorageState = TState> {
 
   public name: string;
   public get state(): TState {
@@ -47,28 +45,25 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
   private subscriptions: Array<WrapperSubscription<TState>> = [];
   private stateMapper: StateMapper<any, TState>;
   private mappedState: TState;
-  // private unmappedState: any;
-  // private prevUnmappedState: any;
-  // private prevMappedState: TState;
   private triggeringSubs = false;
   private myMethods?: TMethods;
-  private getState?: () => TReduxState;
-  private getPrevState?: () => TReduxState;
-  private methodsGetter: (context: IMethodsGetterContext<TReduxState>) => TMethods;
-  private storeGetter?: StoreGetter<any>;
-  private dispatch?: (action: IAction<any>) => void;
+  private getState?: () => TStorageState;
+  private getPrevState?: () => TStorageState;
+  private methodsGetter: (context: IMethodsGetterContext<TStorageState>) => TMethods;
+  private initialStateGetter?: InitialStateGetter<any, TStorageState>;
+  private setState?: (state: any) => void;
 
   public constructor({
                 name,
                 methodsGetter = () => ({} as TMethods),
-                storeGetter,
+                initialStateGetter = (initialState) => initialState,
                 isPermanent,
                 stateMapper = (s) => s,
-  }: IWrapperParams<TState, TMethods, TReduxState>) {
+  }: IWrapperParams<TState, TMethods, TStorageState>) {
     this.isPermanent = isPermanent;
     this.name = name;
     this.methodsGetter = methodsGetter;
-    this.storeGetter = storeGetter;
+    this.initialStateGetter = initialStateGetter;
     this.stateMapper = stateMapper;
   }
 
@@ -85,24 +80,25 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
     this.name = name;
     return this;
   }
-  public withMethods = <TNextMethods>(methodsGetter: MethodsGetter<TMethods, TNextMethods, TReduxState>) => {
+  public withMethods = <TNextMethods>(methodsGetter: MethodsGetter<TMethods, TNextMethods, TStorageState>) => {
     this.shouldBeUnmounted();
-    const nextMethodsGetter = (context: IMethodsGetterContext<TReduxState>) => methodsGetter(context, this.methodsGetter(context));
-    return this.next<TState, TNextMethods, TReduxState>({ methodsGetter: nextMethodsGetter });
+    const nextMethodsGetter = (context: IMethodsGetterContext<TStorageState>) => methodsGetter(context, this.methodsGetter(context));
+    return this.next<TState, TNextMethods, TStorageState>({ methodsGetter: nextMethodsGetter });
   }
   public withState = <TNextState>(stateMapper: StateMapper<TState, TNextState>) => {
     this.shouldBeUnmounted();
     let prevResult: TNextState | undefined;
     const nextStateMapper = (nextState: TState) =>
       prevResult = stateMapper(this.stateMapper(nextState));
-    return this.next<TNextState, TMethods, TReduxState>({ stateMapper: nextStateMapper});
+    return this.next<TNextState, TMethods, TStorageState>({ stateMapper: nextStateMapper});
   }
-  public withStore = <TReduxState>(storeGetter: StoreGetter<TReduxState>) => {
+  public withInitialState = <TAddon>(initialStateGetter: InitialStateGetter<TStorageState, TAddon>) => {
     this.shouldBeUnmounted();
-    return this.next<TReduxState, TMethods, TReduxState>({ storeGetter });
+    const nextInitialStateGetter = (initialState: TStorageState) => ({ ...initialStateGetter(this.initialStateGetter!(initialState)) as any, ...initialState as any});
+    return this.next<TStorageState & TAddon, TMethods, TStorageState & TAddon>({ initialStateGetter: nextInitialStateGetter});
   }
-  public getStore = (context: { getProps: () => any }) => {
-    return this.storeGetter ? this.storeGetter() : undefined;
+  public getInitialState = () => {
+    return this.initialStateGetter!({});
   }
   public onChangeStore = () => {
     this.shouldBeMounted();
@@ -143,15 +139,15 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
     };
   }
 
-  public mount({ getState, dispatch, props, getPrevState }: IMountWrapperParams<TReduxState>) {
+  public mount({ getState, setState, getPrevState }: IMountWrapperParams<TStorageState>) {
     this.getState = getState;
     this.getPrevState = getPrevState;
-    this.dispatch = dispatch;
+    this.setState = setState;
     this.myMethods = this.methodsGetter({
       getState: () => {
         trigger(this);
         return this.getState!();
-      }, dispatch
+      }, setState
     });
     this.initState();
   }
@@ -159,7 +155,7 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
   public unmount() {
     this.getState = undefined;
     this.getPrevState = undefined;
-    this.dispatch = undefined;
+    this.setState = undefined;
     this.myMethods = undefined;
   }
 
@@ -168,7 +164,7 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
     this.recalculateState({ ...this.getState!() as any});
   }
 
-  private recalculateState = (nextState: TReduxState) => {
+  private recalculateState = (nextState: TStorageState) => {
     if (this.isChanged()) {
       this.mappedState = this.stateMapper(nextState);
     }
@@ -186,13 +182,13 @@ export class Wrapper<TState, TMethods, TReduxState = TState> {
     }
   }
 
-  private next<TNextState, TNextMethods, TNextReduxState>({
+  private next<TNextState, TNextMethods, TNexTStorageState>({
                 name = this.name,
                 methodsGetter = this.methodsGetter,
-                storeGetter = this.storeGetter,
+                initialStateGetter = this.initialStateGetter,
                 isPermanent = this.isPermanent,
                 stateMapper = this.stateMapper,
-  }: Partial<IWrapperParams<TNextState, TNextMethods, TReduxState>>): Wrapper<TNextState, TNextMethods, TNextReduxState> {
-    return new Wrapper<TNextState, TNextMethods, TNextReduxState>({ name, methodsGetter, storeGetter, isPermanent, stateMapper } as any);
+  }: Partial<IWrapperParams<TNextState, TNextMethods, TStorageState>>): Wrapper<TNextState, TNextMethods, TNexTStorageState> {
+    return new Wrapper<TNextState, TNextMethods, TNexTStorageState>({ name, methodsGetter, initialStateGetter, isPermanent, stateMapper } as any);
   }
 }

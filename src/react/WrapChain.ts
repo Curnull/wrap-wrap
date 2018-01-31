@@ -1,5 +1,8 @@
 import * as React from 'react';
-import {IExtender, wrapComponent, Wrapper} from './index';
+import {IExtender} from './extender';
+import {Wrapper} from '../Wrapper';
+import {wrapComponent} from './wrapComponent';
+import {IDomainHost} from '../domainHost';
 
 export type Diff<T extends string, U extends string> = ({ [P in T]: P } & { [P in U]: never } & { [x: string]: never })[T];
 export type Omit<T, K extends keyof T> = Pick<T, Diff<keyof T, K>>;
@@ -30,6 +33,7 @@ export interface IWrapChainParams<TProps> {
   extenders?: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
   preExtenders?: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
   internalPropsNames?: string[];
+  domainHostGetter?: (props: any) => IDomainHost<any> | undefined;
 }
 
 export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
@@ -38,6 +42,7 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
   private extenders: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
   private preExtenders: Array<(c: React.ComponentType<any>) => React.ComponentType<any>>;
   private internalPropsNames: string[];
+  private domainHostGetter: (props: TExternalProps & TExtendedProps) => IDomainHost<any> | undefined;
 
   constructor({
                 mappers = [],
@@ -45,12 +50,14 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
                 extenders = [],
                 preExtenders = [],
                 internalPropsNames = [],
+                domainHostGetter = () => undefined
               }: IWrapChainParams<TExternalProps & TExtendedProps>) {
     this.mappers = mappers;
     this.changePropsCallback = changePropsCallback;
     this.extenders = extenders;
     this.preExtenders = preExtenders;
     this.internalPropsNames = internalPropsNames;
+    this.domainHostGetter = domainHostGetter;
   }
 
   public withProps = <T>(
@@ -102,7 +109,14 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
     return this.next({ preExtenders: [...this.preExtenders, extender] });
   }
 
+  public withDomainHost = (domainHost: IDomainHost<any> | (() => IDomainHost<any>)) => {
+    return this.next({ domainHostGetter: typeof domainHost === 'function' ? domainHost : () => domainHost });
+  }
+
   public component = <TProps extends Partial<TInternalProps>>(component: React.ComponentType<TProps>) => {
+    if (!component) {
+      throw new Error('component mast be defiend! Check you wrap chains!')
+    }
     const preWrapperComponent = this.preExtenders.reduce((result, extender) => extender(result), component);
     return wrapComponent<Omit<TProps, keyof TInternalProps> & TExternalProps, TProps>(
       {
@@ -111,6 +125,7 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
         extenders: this.extenders,
         internalPropsNames: this.internalPropsNames,
         changePropsCallback: this.changePropsCallback,
+        domainHostGetter: this.domainHostGetter
       });
   }
 
@@ -120,8 +135,9 @@ export class WrapChain<TInternalProps, TExtendedProps, TExternalProps> {
               extenders = this.extenders,
               preExtenders = this.preExtenders,
               internalPropsNames = this.internalPropsNames,
+              domainHostGetter = this.domainHostGetter
             }): WrapChain<TNextInternalProps, TNextExtendedProps, TNextExternalProps> {
-    return new WrapChain({ mappers, changePropsCallback, extenders, preExtenders, internalPropsNames }) as any;
+    return new WrapChain({ mappers, changePropsCallback, extenders, preExtenders, internalPropsNames, domainHostGetter }) as any;
   }
 }
 

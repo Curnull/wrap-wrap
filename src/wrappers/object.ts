@@ -1,30 +1,30 @@
-import { getObjectReducer, setObject, setProperty } from '../redux/index';
-import { createWrapper, Wrapper } from './index';
+import { Wrapper } from '../Wrapper';
+import {createWrapper} from './createWrapper';
 
-export interface ObjectWrapperMethods<T> {
+export interface IObjectWrapperMethods<T> {
   set: <K extends keyof T>(objOrKey: K | T, val?: T[K]) => void;
+  merge: (obj: Partial<T>) => void;
 }
 
-export type ObjectWrapper<T> = Wrapper<T, ObjectWrapperMethods<T>>;
+export type ObjectWrapper<T> = Wrapper<T, IObjectWrapperMethods<T>>;
 
 export function object<T extends object>(initialState: T): ObjectWrapper<T> {
   return createWrapper()
-    .withStore(() => {
-      return {
-        initialState,
-        reducer: getObjectReducer<T>(),
-      };
-    })
-    .withMethods(({ dispatch }) => {
+    .withInitialState(() => initialState)
+    .withMethods(({ setState, getState }) => {
       const set = <K extends keyof T>(objOrKey: K | T, val?: T[K]) => {
         if (typeof objOrKey === 'object') {
-          dispatch(setObject(objOrKey as T));
+          setState(objOrKey);
         } else if (typeof objOrKey === 'string') {
-          dispatch(setProperty(objOrKey, val));
+          setState({...getState() as any, [objOrKey]: val});
         } else {
           throw new Error('Invalid params!');
         }
       };
-      return { set };
+
+      const merge = (obj: Partial<T>) => {
+        setState({...getState() as any, ...obj as any});
+      };
+      return { set, merge };
     });
 }

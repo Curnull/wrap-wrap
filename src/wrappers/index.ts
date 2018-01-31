@@ -3,4 +3,3 @@ export * from './value';
 export * from './list';
 export * from './object';
 export * from './createWrapper';
-export * from './Wrapper';

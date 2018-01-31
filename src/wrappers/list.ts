@@ -1,6 +1,9 @@
-import { getListReducer, IListState, getListInitialState, setItems, addItem, deleteItem  } from '../redux/index';
-import { createWrapper, Wrapper } from './index';
+import { Wrapper } from '../Wrapper';
+import {object} from './object';
 
+export interface IListState<T> {
+  items: T[];
+}
 export interface IListWrapperMethods<T> {
   set: (items: T[]) => void;
   setItem: (index: number, item: T) => void;
@@ -8,19 +11,16 @@ export interface IListWrapperMethods<T> {
   remove: (items: T[] | T) => void;
   includes: (item: T) => boolean;
   toggleItem: (item: T) => void;
-  setProp: (index: number, field: string, value: any) => void;
+  setProp: <K extends keyof T>(index: number, field: K, value: T[K]) => void;
 }
 
 export type ListWrapper<T> = Wrapper<IListState<T>, IListWrapperMethods<T>>;
 
-export function list<T>(items?: T[]): ListWrapper<T> {
-  return createWrapper()
-    .withStore(() => ({
-      initialState: items ? { items } : getListInitialState<T>(),
-      reducer: getListReducer<T>(),
-    }))
-    .withMethods(({ dispatch, getState }) => {
-      const set = (items: T[]) => dispatch(setItems(items));
+export function list<T>(items: T[] = []): ListWrapper<T> {
+  const t = object({items});
+  return object({items})
+    .withMethods(({ getState }, {merge}) => {
+      const set = (items: T[]) => merge({items});
 
       const setItem = (index: number, item: T) => {
         const newItems = [...getState().items];
@@ -32,17 +32,18 @@ export function list<T>(items?: T[]): ListWrapper<T> {
         if (Array.isArray(item)) {
           set([...getState().items, ...item]);
         } else {
-          dispatch(addItem(item));
+          set([...getState().items, item]);
         }
       };
 
       const remove = (item: T | T[]) => {
+        let nextItems;
         if (Array.isArray(item)) {
-          const items = getState().items.filter((i: T) => !~item.indexOf(i));
-          set(items);
+          nextItems = getState().items.filter((i: T) => !~item.indexOf(i));
         } else {
-          dispatch(deleteItem(item));
+          nextItems = getState().items.filter((i: T) => i !== item);
         }
+        set(nextItems);
       };
 
       const includes = (item: T) => getState().items.indexOf(item) !== -1;
@@ -52,9 +53,9 @@ export function list<T>(items?: T[]): ListWrapper<T> {
       const setProp = <K extends keyof T>(index: number, field: K, value: T[K]) => {
         const item = getState().items[index];
         const newItem = {
-            ...item,
+            ...item as any,
           [field as string]: value,
-      };
+        };
         const items = [ ...getState().items];
         items[index] = newItem;
         set(items);

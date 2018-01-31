@@ -17,7 +17,7 @@ export function and(...args: any[]) {
     return true;
 }
 
-export const isWrapper = (obj: any) => obj && obj.withStore && obj.withMethods;
+export const isWrapper = (obj: any) => obj && obj.withState && obj.withMethods;
 
 export interface IWrappersStructure {
     [propsName: string]: Wrapper<any, any, any> | IWrappersStructure;

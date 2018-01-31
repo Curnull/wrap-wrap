@@ -1,9 +1,8 @@
-import {Wrapper} from './index';
+import {Wrapper} from '../Wrapper';
 
 export function createWrapper() {
   return new Wrapper<{}, {}, {}>({
     name: '',
-    storeGetter: undefined,
     isPermanent: false,
   });
 }
